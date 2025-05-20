@@ -28,5 +28,5 @@ resource "google_service_account_iam_member" "this" {
   service_account_id = each.value.service_account
   role               = "roles/iam.workloadIdentityUser"
 
-  member = "principalSet://iam.googleapis.com/projects/${var.gcp_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.this.workload_identity_pool_id}/attribute.aws_role/${each.value.aws_iam_role_name}"
+  member = "principalSet://iam.googleapis.com/projects/${var.gcp_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.this.workload_identity_pool_id}/attribute.aws_role/arn:aws:sts::${var.aws_account_id}:assumed-role/${each.value.aws_iam_role_name}"
 }
