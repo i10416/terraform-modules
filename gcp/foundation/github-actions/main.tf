@@ -24,14 +24,12 @@ EOT
   }
 }
 
-resource "google_service_account_iam_binding" "this" {
+resource "google_service_account_iam_member" "this" {
   for_each           = { for repo in local.repositories : "${repo.service_account}/${repo.repository_name}" => repo }
   service_account_id = "projects/${var.gcp_project_id}/serviceAccounts/${each.value.service_account}"
   role               = "roles/iam.workloadIdentityUser"
 
-  members = [
-    "principalSet://iam.googleapis.com/projects/${var.gcp_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.this.workload_identity_pool_id}/attribute.repository/${var.repository_owner}/${each.value.repository_name}",
-  ]
+  member = "principalSet://iam.googleapis.com/projects/${var.gcp_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.this.workload_identity_pool_id}/attribute.repository/${var.repository_owner}/${each.value.repository_name}"
 }
 
 

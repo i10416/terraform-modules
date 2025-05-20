@@ -23,12 +23,10 @@ resource "google_iam_workload_identity_pool_provider" "aws_provider" {
   attribute_condition = "attribute.account == '${var.aws_account_id}'"
 }
 
-resource "google_service_account_iam_binding" "this" {
+resource "google_service_account_iam_member" "this" {
   for_each           = { for role in var.aws_iam_role_mappings : "${role.aws_iam_role_name}/${role.service_account}" => role }
   service_account_id = each.value.service_account
   role               = "roles/iam.workloadIdentityUser"
 
-  members = [
-    "principalSet://iam.googleapis.com/projects/${var.gcp_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.this.workload_identity_pool_id}/attribute.aws_role/${each.value.aws_iam_role_name}",
-  ]
+  member = "principalSet://iam.googleapis.com/projects/${var.gcp_project_number}/locations/global/workloadIdentityPools/${google_iam_workload_identity_pool.this.workload_identity_pool_id}/attribute.aws_role/${each.value.aws_iam_role_name}"
 }
