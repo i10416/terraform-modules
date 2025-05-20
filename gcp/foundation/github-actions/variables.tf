@@ -6,7 +6,7 @@ variable "gcp_project_number" {
   type        = string
   description = "GCP project number. You can find it at https://console.cloud.google.com/iam-admin/settings"
 }
-variable "repository_organization" {
+variable "repository_owner" {
   type    = string
 }
 
