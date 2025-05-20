@@ -13,6 +13,13 @@ resource "google_iam_workload_identity_pool_provider" "aws_provider" {
   aws {
     account_id = var.aws_account_id
   }
+
+  attribute_mapping = {
+    "google.subject"     = "assertion.arn"
+    "attribute.account"  = "assertion.account"
+  }
+
+  attribute_condition = "attribute.account == '${var.aws_account_id}'"
 }
 
 resource "google_service_account_iam_binding" "this" {
