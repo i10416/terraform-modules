@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "This is a placeholder function to be replaced with your native lambda application."
+
+exit 1
