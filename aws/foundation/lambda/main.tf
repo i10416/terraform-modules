@@ -11,8 +11,10 @@ resource "aws_lambda_function" "this" {
   timeout     = var.timeout
   tags        = var.tags
   environment {
-    variables = var.env_vars
+    variables = merge({ PARAMETERS_SECRETS_EXTENSION_HTTP_PORT = "2773" }, var.env_vars)
   }
+  architectures = [var.architecture]
+  layers        = [local.extension_layer_arn[var.architecture][var.aws_region]]
   ephemeral_storage {
     size = var.ephemeral_storage_size
   }
@@ -58,12 +60,39 @@ resource "aws_iam_role" "this" {
   description        = "Allows Lambda functions to call AWS services on your behalf."
 }
 
+# Logging
+
+resource "aws_iam_policy" "cloudwatch" {
+  name        = "${var.function_name}-write-cw-logs"
+  description = "grant permissions necessary to create and write logs to cloudwatch"
+  policy = templatefile(
+    "${path.module}/grant-policy-templates/write-cloudwatch-log.json",
+    {
+      aws_region           = var.aws_region,
+      aws_account_id       = var.aws_account_id,
+      lambda_log_group_arn = aws_cloudwatch_log_group.this.arn
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch" {
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.cloudwatch.arn
+}
+
 
 # Network
 # See https://dev.classmethod.jp/articles/tsnote-lambda-the-provided-execution-role-does-not-have-permissions-to-call-createnetworkinterface-on-ec2/
 resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
   role       = aws_iam_role.this.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# File System
+resource "aws_iam_role_policy_attachment" "lambda_efs_access" {
+  count      = var.file_system_config == null ? 0 : 1
+  role       = aws_iam_role.this.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientReadWriteAccess"
 }
 
 # Schedule

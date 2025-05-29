@@ -2,52 +2,58 @@
 
 variable "aws_account_id" {
   type        = string
-  description = "AWS Account ID"
+  description = "The AWS account ID where the Lambda function will be deployed."
 }
 
 variable "aws_region" {
   type        = string
-  description = "AWS region"
+  description = "The AWS region where the Lambda function will be deployed."
 }
 
 
 # Lambda Settings
 variable "function_name" {
   type        = string
-  description = "lambda function name without arn"
+  description = "The name of the Lambda function (without ARN)."
 }
 
 
 variable "tags" {
   type        = map(any)
   default     = {}
-  description = "lambda tags"
+  description = "A map of tags to assign to the Lambda function."
 }
 
 # Runtime Settings
 
 variable "memory_size" {
   type        = number
-  description = "memory size to be allocated"
+  description = "Amount of memory (in MB) allocated to the Lambda function. Default: 1536."
   default     = 1536
 }
 
 variable "ephemeral_storage_size" {
   type        = number
-  description = "ephemeral storage size"
+  description = "Amount of ephemeral storage (in MB) allocated to the Lambda function. Default: 512."
   default     = 512
 }
 
 variable "timeout" {
   type        = number
-  description = "lambda timeout"
+  description = "Timeout (in seconds) for the Lambda function. Default: 300."
   default     = 300
+}
+
+variable "architecture" {
+  type        = string
+  description = "CPU architecture. One of [`x86_64`, `arm64`]"
+  default     = "x86_64"
 }
 
 variable "env_vars" {
   type        = map(any)
   default     = {}
-  description = "lambda runtime environment variables"
+  description = "A map of environment variables for the Lambda runtime."
 }
 
 # network
@@ -58,18 +64,18 @@ variable "vpc_config" {
   })
   nullable    = true
   default     = null
-  description = "Lambda VPC Config"
+  description = "VPC configuration for the Lambda function (subnet and security group IDs)."
 }
 
 # fs
 variable "file_system_config" {
   type = object({
     efs_access_point_arn = string
-    local_mount_path     = optional(string, "/mnt/efs")
+    local_mount_path     = string
   })
   nullable    = true
   default     = null
-  description = "Lambda EFS config"
+  description = "EFS configuration for the Lambda function (access point ARN and optional mount path)."
 }
 
 # Schedule
@@ -82,7 +88,7 @@ variable "schedule" {
     state       = optional(string, "DISABLED")
   }))
   default     = []
-  description = "schedule expression to control lambda invocation"
+  description = "List of schedule expressions to control Lambda invocation."
 }
 
 
@@ -93,5 +99,5 @@ variable "s3_bucket_trigger" {
   })
   nullable    = true
   default     = null
-  description = "s3 trigger settings"
+  description = "S3 trigger settings for the Lambda function (source bucket ARN)."
 }
