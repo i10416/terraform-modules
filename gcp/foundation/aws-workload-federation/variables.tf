@@ -8,16 +8,18 @@ variable "gcp_project_number" {
 }
 
 variable "aws_account_id" {
-  type = string
-  description = "AWS account ID"
+  type        = string
+  description = "Deprecated: AWS account ID"
 }
 
 variable "aws_iam_role_mappings" {
   type = list(object({
+    aws_account_id    = string
     aws_iam_role_name = string
-    service_account = string
+    service_account   = string
   }))
   description = "a list of aws_iam_role and service account email"
 }
+
 
 
