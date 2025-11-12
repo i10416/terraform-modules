@@ -35,7 +35,7 @@ resource "google_iam_workload_identity_pool_provider" "aws_provider" {
 resource "google_service_account_iam_member" "this" {
   for_each = merge(
     [for _, mappings in local.aws_iam_role_mappings_group :
-      { for m in mappings : "${m.aws_iam_role_name}/${m.service_account}" => mapping }
+      { for m in mappings : "${m.aws_iam_role_name}/${m.service_account}" => m }
     ]...
   )
   service_account_id = each.value.service_account
