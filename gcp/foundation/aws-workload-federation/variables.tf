@@ -17,6 +17,7 @@ variable "aws_iam_role_mappings" {
     aws_account_id    = string
     aws_iam_role_name = string
     service_account   = string
+    skip_id_suffix = optional(bool, false)
   }))
   description = "a list of aws_iam_role and service account email"
 }

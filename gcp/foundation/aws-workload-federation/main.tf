@@ -1,10 +1,10 @@
 locals {
   aws_iam_role_mappings_group = {
-    for item in var.aws_iam_role_mappings :
-    "${item.aws_account_id}:${item.aws_iam_role_name}:${item.service_account}" => {
+    for item in var.aws_iam_role_mappings : item.aws_account_id => {
       aws_account_id    = item.aws_account_id
       aws_iam_role_name = item.aws_iam_role_name
       service_account   = item.service_account
+      skip_id_suffix    = item.skip_id_suffix
     }...
   }
 }
@@ -18,11 +18,11 @@ resource "google_iam_workload_identity_pool" "this" {
 resource "google_iam_workload_identity_pool_provider" "aws_provider" {
   for_each                           = local.aws_iam_role_mappings_group
   workload_identity_pool_id          = google_iam_workload_identity_pool.this.workload_identity_pool_id
-  workload_identity_pool_provider_id = "aws-provider"
-  display_name                       = "aws_provider"
-  description                        = "GCP-AWS Workload Identity Federation"
+  workload_identity_pool_provider_id = "aws-provider${each.skip_id_suffix ? "" : "-${each.key}"}"
+  display_name                       = "aws_provider${each.skip_id_suffix ? "" : "(${each.key})"}"
+  description                        = "GCP-AWS Workload Identity Federation for AWS Account ${each.key}"
   aws {
-    account_id = each.value.aws_account_id
+    account_id = each.key
   }
 
   attribute_mapping = {
@@ -31,7 +31,7 @@ resource "google_iam_workload_identity_pool_provider" "aws_provider" {
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
   }
 
-  attribute_condition = "attribute.account == '${each.value.aws_account_id}'"
+  attribute_condition = "attribute.account == '${each.key}'"
 }
 
 resource "google_service_account_iam_member" "this" {
