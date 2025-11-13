@@ -18,8 +18,8 @@ resource "google_iam_workload_identity_pool" "this" {
 resource "google_iam_workload_identity_pool_provider" "aws_provider" {
   for_each                           = local.aws_iam_role_mappings_group
   workload_identity_pool_id          = google_iam_workload_identity_pool.this.workload_identity_pool_id
-  workload_identity_pool_provider_id = "aws-provider${each.skip_id_suffix ? "" : "-${each.key}"}"
-  display_name                       = "aws_provider${each.skip_id_suffix ? "" : "(${each.key})"}"
+  workload_identity_pool_provider_id = "aws-provider${each.value[0].skip_id_suffix ? "" : "-${each.key}"}"
+  display_name                       = "aws_provider${each.value[0].skip_id_suffix ? "" : "(${each.key})"}"
   description                        = "GCP-AWS Workload Identity Federation for AWS Account ${each.key}"
   aws {
     account_id = each.key
