@@ -1,0 +1,95 @@
+name: "Terraform CI/CD"
+description: "An action to execute terraform plan and apply. This runs `plan` command on every PR update and `apply` on every PR merge"
+inputs:
+  working-directory:
+    description: A directory to execute terraform
+    required: true
+  GITHUB_TOKEN:
+    description: GitHub token
+    required: true
+  MERGE_BRANCH:
+    description: "A branch name a merge to which triggers `terraform apply`. Name MUST start with `/refs/heads/` prefix. Default is `refs/heads/main`"
+    default: "refs/heads/main"
+    required: false
+  FORCE_APPLY:
+    description: "`'true'` or `'false'`. Default is `'false'`. Skip merge branch check and forcibly run `terraform apply`"
+    required: false
+    default: 'false'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get Terraform Version
+      shell: bash
+      id: tf_version
+      run: |
+        echo "value=$(cat .terraform-version)" >> $GITHUB_OUTPUT
+      working-directory: ${{ inputs.working-directory }}
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version:  ${{ steps.tf_version.outputs.value }}
+    - name: Terraform Init
+      id: init
+      run: terraform init
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+    - name: Terraform Format
+      id: fmt
+      run: terraform fmt -check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+    - name: setup tflint
+      uses: terraform-linters/setup-tflint@v4
+      with:
+        tflint_version: v0.56.0
+    - name: lint
+      run: |
+        terraform validate
+        tflint --init
+        tflint
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+    - name: Terraform Plan
+      id: plan
+      if: github.event_name == 'pull_request' || github.event.inputs.cmd == 'plan'
+      run: |
+        terraform plan -no-color -input=false >/dev/null -out=plan && terraform show -no-color plan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+    - name: Update Pull Request
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        github-token: ${{ inputs.GITHUB_TOKEN }}
+        script: |
+          const output = `
+          ### ${{ inputs.working-directory }}
+          #### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+          <details><summary>Show Plan</summary>\n
+          \`\`\`terraform\n
+          ${process.env.PLAN}
+          \`\`\`
+          </details>
+
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+    - name: Terraform Refresh
+      if: github.event.inputs.cmd == 'refresh'
+      run: terraform apply -refresh-only -auto-approve -input=false
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+    - name: Terraform Apply
+      if: inputs.FORCE_APPLY == 'true' || (github.ref == inputs.MERGE_BRANCH && github.event_name == 'push' || github.event.inputs.cmd == 'apply')
+      run: terraform apply -auto-approve -input=false
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
