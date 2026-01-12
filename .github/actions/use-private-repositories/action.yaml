@@ -1,0 +1,30 @@
+name: "Setup Private Repo Access"
+description: "Setup Private Repo Access using GitHub App"
+inputs:
+  PRIVATE_KEY:
+    description: "GitHub App Private Key"
+    required: true
+  REPOSITORIES:
+    description: GitHub Repositories to grant access
+    required: true
+outputs:
+  token:
+    description: "Generated GitHub App token"
+    value: ${{ steps.app-token.outputs.token }}
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v5
+    - uses: actions/create-github-app-token@v2
+      id: app-token
+      with:
+        app-id: 1235892
+        private-key: ${{ inputs.PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+        repositories: ${{ inputs.REPOSITORIES }}
+
+    - name: Set github url and credentials
+      shell: bash
+      run: |
+        git config --global credential.helper store
+        echo "https://x-access-token:${{ steps.app-token.outputs.token }}@github.com" > ~/.git-credentials
